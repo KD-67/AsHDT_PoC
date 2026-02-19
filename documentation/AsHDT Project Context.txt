@@ -1,0 +1,500 @@
+## What This Project Is
+
+AsHDT is a modular platform for longitudinal health monitoring and early risk
+detection for astronauts. It maintains a persistent, continuously updated health
+state for each subject by integrating data from multiple independent data-producing
+modules (wearables, stress tests, lab results, cognitive assessments, etc.).
+
+The system's primary analytical output is a **trajectory analysis** of individual
+biomarkers over time, based on a three-derivative framework:
+- f(x) — current value relative to personalized zone boundaries (Non-pathology /
+  Vulnerability / Pathology)
+- f'(x) — direction of change (Improving / Stable / Worsening)
+- f''(x) — rate of change (Accelerating / Steady / Decelerating)
+
+These combine into 27 discrete trajectory states (see Appendix A of the
+Implementation Guide). A **time-to-zone-transition** estimate is also computed for
+each data point, giving clinicians a concrete intervention window.
+
+This is a **proof-of-concept (PoC)** build. The goal is to validate the trajectory
+visualization and analysis logic before adding production features. Simplicity and
+transparency are preferred over optimization.
+
+---
+
+## Current Build Status
+
+We are at the beginning of Phase 0 (project scaffolding). Nothing has been
+implemented yet. The architecture and all key decisions have been finalized through
+a planning session and documented in the Implementation Guide
+(`AsHDT_PoC_Implementation_Guide.docx`).
+
+The planned build sequence is:
+1. Phase 0 — Git repo, folder structure, Python conda environment, Node check
+2. Phase 1 — Synthetic JSON test data (12 data points, 1 subject, 1 marker)
+3. Phase 2 — Python backend (FastAPI + SQLite + trajectory engine)
+4. Phase 3 — Svelte frontend (TimeGraphForm + TrajectoryChart + TrajectoryTable)
+5. Phase 4 — End-to-end integration test
+
+---
+
+## Technology Stack
+
+| Layer | Technology | Notes |
+|---|---|---|
+| Backend language | Python | pip + requirements.txt. No Poetry, no uv. |
+| API framework | FastAPI | With Pydantic v2 models for request validation |
+| Database | SQLite | Via raw `sqlite3` stdlib. No ORM, no SQLAlchemy. |
+| Frontend framework | Svelte | Via Vite. Default dev port: 5173. |
+| Visualization | Plotly.js | `plotly.js-dist-min` npm package |
+| OS / IDE | Windows, VS Code | Use Windows path separators where relevant |
+| Runtime | Node.js ≥ 18 | Already installed |
+| Python env | conda | Environment name: 'asHDT'. Activate with `conda activate asHDT` |
+
+**Do not suggest alternatives to any of the above** unless there is a clear bug or
+incompatibility. All stack decisions were made deliberately.
+
+---
+
+## Repository Structure
+
+```
+asHDT/
+├── CLAUDE.md                          ← this file
+├── .gitignore
+├── registry/
+│   └── module_registry.json           ← single source of truth for all modules
+├── data/                              ← NOT committed to Git
+│   ├── archive/
+│   │   └── {subject_id}/
+│   │       └── {module_id}/
+│   │           └── {marker_id}/
+│   │               ├── index.json     ← time-ordered index of data point files
+│   │               └── {timestamp}.json  ← individual data points
+│   ├── snapshots/
+│   │   └── {subject_id}/
+│   │       └── {snapshot_id}.json
+│   ├── reports/
+│   │   └── {subject_id}/
+│   │       └── {report_id}.json
+│   └── asHDT.db                       ← SQLite database
+├── backend/
+│   ├── main.py                        ← FastAPI entry point
+│   ├── requirements.txt
+│   ├── api/
+│   │   └── routes.py                  ← all FastAPI route definitions
+│   └── core/
+│       ├── ingestion/
+│       │   └── registry_loader.py
+│       ├── state_store/
+│       │   ├── database.py
+│       │   └── archive_reader.py
+│       ├── analysis/
+│       │   └── trajectory.py          ← trajectory computer (pure computation)
+│       └── output/
+│           └── report_serializer.py
+├── frontend/
+│   └── src/
+│       ├── App.svelte
+│       ├── lib/
+│       │   ├── api.js                 ← ALL fetch calls live here, nowhere else
+│       │   └── stores.js
+│       └── components/
+│           ├── TimeGraphForm.svelte
+│           ├── TrajectoryChart.svelte
+│           └── TrajectoryTable.svelte
+└── test_data/                         ← scratch space for test files
+```
+
+---
+
+## Core Architectural Rules
+
+These are non-negotiable constraints agreed upon during the design phase. Do not
+suggest changes to these without being explicitly asked.
+
+### Module boundary
+- Modules are **purely data-producing**. They output JSON files and nothing else.
+- A module that is not registered in `module_registry.json` cannot inject data.
+- The core never calls module code directly — it only reads their output files.
+
+### Data flow direction
+- Data flows: Module output → Ingestion → State Store → Analysis → Output
+- Analysis only runs **on user request**, never automatically when new data arrives.
+- The database stores **metadata only**. Full JSON payloads live in the filesystem.
+
+### Immutability of the raw archive
+- Files in `data/archive/` are **never modified or deleted** after creation.
+- The archive is append-only. It is the audit trail and future training data source.
+- `index.json` is the only file in the archive that gets updated (new entries appended).
+
+### Confidence scoring
+- Confidence scores are computed **at report/snapshot generation time**, not at ingestion.
+- Formula: `confidence = 0.5 ^ (age_hours / half_life_hours)`
+- Half-lives by volatility class:
+  - `acute`: 6 hours
+  - `short_term`: 168 hours (7 days)
+  - `medium_term`: 720 hours (30 days)
+  - `stable`: 8760 hours (365 days)
+
+### Trajectory computation
+- The trajectory computer fits a **single polynomial** (numpy.polyfit) to the
+  time-series data. It does NOT use numerical differentiation.
+- Derivatives are computed analytically from the polynomial coefficients using
+  numpy.polyder — this avoids noise amplification.
+- Time is expressed as **hours elapsed since the earliest timestamp** in the series
+  for numerical stability. The origin timestamp is stored in fit_metadata.
+- Zone assignment uses **raw measured values**, not fitted values.
+- Time-to-transition uses numpy.roots on (polynomial - boundary_value), filtering
+  for real positive roots beyond the current x.
+- The derivative zero threshold is ±0.001 per hour.
+
+### Frontend API calls
+- **All** fetch calls to the backend must go through `frontend/src/lib/api.js`.
+- No fetch calls anywhere else in the frontend codebase.
+
+### No auto-snapshot
+- Snapshots are generated **only on explicit user request**.
+- Every generated snapshot is stored in `data/snapshots/{subject_id}/` and its
+  metadata recorded in the `snapshots` database table.
+
+---
+
+## Data Schemas
+
+### Data point JSON (individual file in archive)
+```json
+{
+  "schema_version": "1.0",
+  "module_id": "vtf_stress_test",
+  "marker_id": "vo2max",
+  "subject_id": "subject_001",
+  "timestamp": "2026-01-05T08:00:00Z",
+  "value": 52.3,
+  "unit": "ml/kg/min",
+  "data_quality": "good"
+}
+```
+- `data_quality` is an enum: `"good"` | `"degraded"` | `"bad"`. No other values.
+- `timestamp` is always ISO 8601 UTC.
+- Filenames use hyphens instead of colons: `2026-01-05T08-00-00Z.json`
+
+### index.json (one per marker folder)
+```json
+{
+  "subject_id": "subject_001",
+  "module_id": "vtf_stress_test",
+  "marker_id": "vo2max",
+  "unit": "ml/kg/min",
+  "entries": [
+    { "timestamp": "2026-01-05T08:00:00Z", "file": "2026-01-05T08-00-00Z.json" }
+  ]
+}
+```
+- Entries must be in **chronological order**.
+- The archive reader uses this for time-range queries — do not bypass it.
+
+### module_registry.json
+```json
+{
+  "registry_version": "1.0",
+  "modules": [
+    {
+      "module_id": "vtf_stress_test",
+      "description": "ESA Vertical Treadmill Facility microgravity stress test",
+      "format": "json",
+      "markers": [
+        {
+          "marker_id": "vo2max",
+          "description": "Maximal oxygen uptake",
+          "unit": "ml/kg/min",
+          "volatility_class": "short_term",
+          "schema_version": "1.0"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST /timegraph request body
+```json
+{
+  "subject_id": "subject_001",
+  "module_id": "vtf_stress_test",
+  "marker_id": "vo2max",
+  "timeframe": {
+    "from": "2026-01-01T00:00:00Z",
+    "to": "2026-03-31T00:00:00Z"
+  },
+  "zone_boundaries": {
+    "healthy_min": 45.0,
+    "healthy_max": 60.0,
+    "vulnerability_margin_pct": 10.0
+  },
+  "fitting": {
+    "polynomial_degree": 2
+  }
+}
+```
+
+### Trajectory output (per data point)
+```json
+{
+  "timestamp": "2026-01-05T08:00:00Z",
+  "x_hours": 0.0,
+  "raw_value": 55.1,
+  "fitted_value": 54.8,
+  "zone": "non_pathology",
+  "f_prime": -0.18,
+  "f_double_prime": 0.002,
+  "trajectory_state": 9,
+  "time_to_transition_hours": 312.5
+}
+```
+- `zone` is one of: `"non_pathology"` | `"vulnerability"` | `"pathology"`
+- `trajectory_state` is an integer 1–27
+- `time_to_transition_hours` may be `null` if no crossing is found within the horizon
+
+---
+
+## Zone Boundary Logic
+
+Given `healthy_min`, `healthy_max`, and `vulnerability_margin_pct`:
+
+```
+range = healthy_max - healthy_min
+margin = range * vulnerability_margin_pct / 100
+
+vulnerability_lower = healthy_min + margin
+vulnerability_upper = healthy_max - margin
+
+Zones (based on raw_value):
+  raw_value < healthy_min              → pathology
+  healthy_min <= raw_value < vulnerability_lower  → vulnerability
+  vulnerability_lower <= raw_value <= vulnerability_upper → non_pathology
+  vulnerability_upper < raw_value <= healthy_max  → vulnerability
+  raw_value > healthy_max              → pathology
+```
+
+---
+
+## SQLite Database Schema
+
+Three tables. Created with `CREATE TABLE IF NOT EXISTS` in `database.py`.
+
+```sql
+CREATE TABLE IF NOT EXISTS subjects (
+    subject_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS snapshots (
+    snapshot_id TEXT PRIMARY KEY,
+    subject_id TEXT NOT NULL,
+    requested_at TEXT NOT NULL,
+    target_time TEXT NOT NULL,
+    marker_ids TEXT NOT NULL  -- JSON array of selected marker_ids
+);
+
+CREATE TABLE IF NOT EXISTS timegraph_reports (
+    report_id TEXT PRIMARY KEY,
+    subject_id TEXT NOT NULL,
+    marker_id TEXT NOT NULL,
+    module_id TEXT NOT NULL,
+    requested_at TEXT NOT NULL,
+    timeframe_from TEXT NOT NULL,
+    timeframe_to TEXT NOT NULL,
+    polynomial_degree INTEGER NOT NULL,
+    healthy_min REAL NOT NULL,
+    healthy_max REAL NOT NULL,
+    vulnerability_margin_pct REAL NOT NULL
+);
+```
+
+Use `sqlite3.Row` as `row_factory` on all connections so columns are accessible
+by name.
+
+---
+
+## FastAPI Endpoints (PoC)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/registry` | Returns full module_registry.json contents |
+| GET | `/subjects` | Scans `data/archive/` folders, returns list of subject_ids |
+| POST | `/timegraph` | Runs trajectory analysis, saves report, returns full result |
+
+CORS is configured to allow `http://localhost:5173` only.
+
+The backend runs on port 8000: `uvicorn main:app --reload --port 8000`
+
+---
+
+## Frontend Component Responsibilities
+
+**App.svelte** — root layout, no business logic
+
+**lib/api.js** — three async functions: `getRegistry()`, `getSubjects()`,
+`postTimegraph(params)`. All error handling lives here.
+
+**lib/stores.js** — writable stores: `registry`, `subjects`, `currentReport`
+
+**TimeGraphForm.svelte** — collects all time-graph parameters, calls `postTimegraph`,
+dispatches result. Shows loading state during request. Shows error message on failure.
+
+**TrajectoryChart.svelte** — receives `report` prop, renders Plotly.js chart with:
+- Zone bands as filled layout shapes (opacity 0.12): green / amber / red
+- Raw value scatter markers colored by zone, sized by data_quality
+  (good = 12px, degraded = 8px, bad = 5px)
+- Fitted curve as a dense line (100+ points, blue dashed) — evaluated client-side
+  using polynomial coefficients from `fit_metadata`
+- f' trace on secondary y-axis (purple line)
+- Hover tooltip showing: timestamp, raw_value, fitted_value, zone,
+  trajectory_state (integer + label), f_prime, f_double_prime,
+  time_to_transition_hours
+
+**TrajectoryTable.svelte** — tabular view of trajectory array, color-coded rows by
+zone, columns: Timestamp / Raw Value / Fitted Value / Zone / State / State Label /
+f' / f'' / Time to Transition
+
+---
+
+## Trajectory State Reference (27 States)
+
+States are indexed 1–27. Each is the combination of:
+- Zone sign: `+` (non_pathology), `0` (vulnerability), `−` (pathology)
+- f' sign: `+` (improving), `0` (stable), `−` (worsening)
+- f'' sign: `+` (accelerating), `0` (steady), `−` (decelerating)
+
+```
+ 1  + + +  Accelerating Improving Non-pathology
+ 2  + + 0  Steadily Improving Non-pathology
+ 3  + + −  Decelerating Improving Non-pathology
+ 4  + 0 +  Improving Reversal in Non-Pathology
+ 5  + 0 0  Neutral Stable Non-pathology
+ 6  + 0 −  Worsening Reversal in Non-Pathology
+ 7  + − +  Decelerating Worsening Non-pathology
+ 8  + − 0  Steadily Worsening Non-pathology
+ 9  + − −  Accelerating Worsening Non-pathology
+10  0 + +  Accelerating Improving Vulnerability
+11  0 + 0  Steadily Improving Vulnerability
+12  0 + −  Decelerating Improving Vulnerability
+13  0 0 +  Improving Reversal in Vulnerability
+14  0 0 0  Neutral Stable Vulnerability
+15  0 0 −  Worsening Reversal in Vulnerability
+16  0 − +  Decelerating Worsening Vulnerability
+17  0 − 0  Steadily Worsening Vulnerability
+18  0 − −  Progressively Worsening Vulnerability
+19  − + +  Accelerating Improving Pathology
+20  − + 0  Steadily Improving Pathology
+21  − + −  Decelerating Improving Pathology
+22  − 0 +  Improving Reversal in Pathology
+23  − 0 0  Neutral Stable Pathology
+24  − 0 −  Worsening Reversal in Pathology
+25  − − +  Decelerating Worsening Pathology
+26  − − 0  Steadily Worsening Pathology
+27  − − −  Accelerating Worsening Pathology
+```
+
+---
+
+## What Is NOT Implemented Yet (Do Not Add Unsolicited)
+
+The following features are explicitly deferred to later phases. Do not implement,
+scaffold, or stub them unless explicitly asked:
+
+- Snapshot generation endpoint and UI
+- Ingestion layer with automatic schema validation and index maintenance
+- Alert / notification system
+- Multimodal composite marker integration (PCA or weighted combination)
+- Continuous data format support (Parquet, HDF5)
+- Authentication or access control
+- Docker / containerization
+- Automated retraining / feedback loop
+- Cognitive assessment module (video diary analysis)
+- Pre-flight baseline module and automated zone boundary suggestions
+- Any UI beyond the developer dashboard (professional GUI is a later phase)
+
+---
+
+## Key Domain Concepts
+
+**Subject** — an individual astronaut or study participant identified by subject_id.
+
+**Module** — an independent data-producing system (e.g. VTF stress test, wearable
+monitor, lab panel). Modules are registered in module_registry.json. They output
+JSON files conforming to the data point schema. They have no awareness of the core
+or other modules.
+
+**Marker** — a single measurable biomarker produced by a module (e.g. vo2max,
+hrv_rmssd). Each marker has a unit and volatility class.
+
+**Volatility class** — how quickly a marker's clinical relevance decays without a
+new reading: acute / short_term / medium_term / stable.
+
+**Snapshot** — a point-in-time cross-sectional view of a subject's state across
+multiple user-selected markers. Generated on explicit user request only.
+
+**Time-graph report** — a longitudinal trajectory analysis of a single marker (or
+composite) over a user-specified timeframe. The primary output of the PoC.
+
+**Trajectory state** — one of 27 states encoding the current zone, direction of
+change, and rate of change for a biomarker at a given moment.
+
+**Time-to-transition** — estimated hours until the fitted trajectory crosses the
+next zone boundary. Null if no crossing is projected within the analysis horizon.
+
+---
+
+## Development Conventions
+
+- Python files use **snake_case** for functions and variables, **PascalCase** for
+  classes.
+- All timestamps are **ISO 8601 UTC** strings throughout the stack. Parse to
+  datetime objects only where computation requires it; serialize back to string
+  before storing or returning.
+- The trajectory computer (`trajectory.py`) is **pure computation** — no file I/O,
+  no database calls, no FastAPI dependencies. It must be independently testable
+  by passing in a list of dicts directly.
+- When adding a new Python file, add its dependencies to `requirements.txt`
+  immediately.
+- When adding a new Svelte component, add it to `frontend/src/components/` and
+  import it explicitly — no auto-importing.
+- Report and snapshot IDs are UUIDs generated with Python's `uuid.uuid4()`.
+- Do not use f-strings for SQL queries. Use parameterized queries (`?` placeholders)
+  exclusively to prevent injection.
+
+---
+
+## Running the Stack
+
+**Backend:**
+```
+cd backend
+conda activate asHDT
+uvicorn main:app --reload --port 8000
+```
+API explorer available at: http://localhost:8000/docs
+
+**Frontend:**
+```
+cd frontend
+npm run dev
+```
+Dashboard available at: http://localhost:5173
+
+---
+
+## Project Background
+
+This project is part of a research program at the Space Applications and
+Technologies Laboratory, Institute of Space Science (INFLPR Subsidiary), Bucharest,
+Romania. The broader research program involves a planned experiment at the ESA
+Vertical Treadmill Facility (VTF) operated by the Austrian Space Forum in
+Innsbruck, Austria, which will generate real multimodal physiological data for
+training the HDT models. The PoC is being built ahead of that experiment to
+validate the data pipeline and trajectory analysis logic using synthetic data.
+
+The primary investigator is Kevin Dominey.

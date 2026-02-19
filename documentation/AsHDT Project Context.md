@@ -50,6 +50,7 @@ The planned build sequence is:
 | OS / IDE | Windows, VS Code | Use Windows path separators where relevant |
 | Runtime | Node.js ≥ 18 | Already installed |
 | Python env | conda | Environment name: 'asHDT'. Activate with `conda activate asHDT` |
+| Notebooks | Jupyter | Used for developing and validating backend logic before transcribing to .py files |
 
 **Do not suggest alternatives to any of the above** unless there is a clear bug or
 incompatibility. All stack decisions were made deliberately.
@@ -104,6 +105,7 @@ asHDT/
 │           ├── TrajectoryChart.svelte
 │           └── TrajectoryTable.svelte
 └── test_data/                         ← scratch space for test files
+└── notebooks/                         ← analysis development and validation notebooks
 ```
 
 ---
@@ -465,6 +467,22 @@ next zone boundary. Null if no crossing is projected within the analysis horizon
 - Report and snapshot IDs are UUIDs generated with Python's `uuid.uuid4()`.
 - Do not use f-strings for SQL queries. Use parameterized queries (`?` placeholders)
   exclusively to prevent injection.
+
+---
+
+## Jupyter Notebooks
+
+- Use notebooks in 'notebooks/' to develop and validate logic in: 
+  'core/state-store/archive_reader.py', 'core/analysis/trajectory.py', and any other
+  future analysis modules.
+- Once logic is validated ina notebook, transcribe it into the corresponding '.py' 
+  file in 'backend/core/'. The notebook is the scratchpad, the .py file is the source 
+  of truth.
+- FastAPI ('main.py', 'routes.py') and teh Svelte frontend are never developed in 
+  notebooks - run these from the terminal as normal.
+- Notebook filenames should reflect the module they are developing, 
+  e.g. 'trajectory_computer.ipynb', 'archive_reader.ipynb'.
+- Add '*.ipynb_checkpoints' to '.gitignore'.
 
 ---
 

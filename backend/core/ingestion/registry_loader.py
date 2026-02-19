@@ -4,7 +4,7 @@ import os
 
 def load_registry(registry_path: str) -> dict:
     """
-    Reads module_registry.json from disk and returns its contents as a Python dict.
+    Reads module_registry.json from disk and returns its contents as a Python dictionary.
     Called once at FastAPI startup — the result is stored in app.state.registry
     so all subsequent requests can access it from memory without re-reading the file.
 

@@ -1,0 +1,1 @@
+def load_registry(registry_path: str) -> dict

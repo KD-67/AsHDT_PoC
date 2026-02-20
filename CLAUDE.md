@@ -338,6 +338,21 @@ Indexed 1–27, combining zone sign `+`/`0`/`−`, f' sign, f'' sign:
 
 ---
 
+## Architecture Documentation
+
+The C4 architecture model lives in `documentation/architecture/` and is rendered with Structurizr Lite via Docker.
+
+**Render command:** `docker compose -f documentation/architecture/docker-compose.yml up` → `http://localhost:8080`
+
+**Rules — enforce in every PR/commit:**
+
+1. Any change that adds, removes, renames, or rewires a **container, component, or relationship** MUST update `workspace.dsl` in the same commit.
+2. Any change that adds, removes, or moves a **Python or Svelte file** MUST update the relevant `group` block(s) inside the corresponding container in `workspace.dsl`.
+3. `filesystem.dsl` owns the deep backend filesystem view (`BackendFilesystem`). Update it only to add or remove a component ID from its `include` list — **never define model elements** (`=` assignments) in `filesystem.dsl`.
+4. All model elements (people, software systems, containers, components, relationships) are defined exclusively in `workspace.dsl`.
+
+---
+
 ## What Is NOT Implemented Yet (Do Not Add Unsolicited)
 
 - Snapshot generation endpoint and UI

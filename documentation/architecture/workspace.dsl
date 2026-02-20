@@ -7,7 +7,7 @@ workspace "AsHDT" "Astronaut Health Data Tracker — longitudinal health monitor
         astronaut     = person "Astronaut" "Data subject. Performs stress tests and wears sensors that produce the health data."
 
         # ── External systems ─────────────────────────────────────────────────
-        dataModules = softwareSystem "Data-Producing Modules" "Wearable sensors, VTF stress-test rigs, lab analysis systems, and cognitive assessment tools. Each module writes JSON data-point files to the archive." {
+        dataModules = softwareSystem "Data Modules" "Wearable sensors, spaceflight analog study data, biochemical markers, and cognitive assessment tools. Each module writes JSON data-point files to the archive." {
             tags "External"
         }
 
@@ -15,7 +15,7 @@ workspace "AsHDT" "Astronaut Health Data Tracker — longitudinal health monitor
         asHDT = softwareSystem "AsHDT" "Maintains a persistent, continuously updated health state for each subject. Computes trajectory analyses of individual biomarkers over time using a three-derivative framework." {
 
             # ── Containers ────────────────────────────────────────────────────
-            frontend = container "Frontend" "Single-page dashboard. Presents trajectory charts, tables, and form controls for requesting analyses." "Svelte 5 / Vite" {
+            frontend = container "Frontend" "Dashboard. Takes user requests for data analysis and presents requested trajectory charts and tables." "Svelte 5 / Vite" {
                 tags "Browser"
 
                 group "src/" {
@@ -35,10 +35,10 @@ workspace "AsHDT" "Astronaut Health Data Tracker — longitudinal health monitor
                 }
             }
 
-            backend = container "Backend" "REST API server. Orchestrates data retrieval, trajectory computation, and report persistence." "Python / FastAPI / uvicorn (port 8000)" {
+            backend = container "Backend" "REST API server. Orchestrates data retrieval, analysis, and long-term storage." "Python / FastAPI / uvicorn (port 8000)" {
                 tags "API"
 
-                mainPy = component "main.py" "FastAPI application entry point. Configures CORS, registers routers, triggers startup tasks." "Python module"
+                mainPy = component "main.py" "FastAPI application entry point. Triggers startup tasks, configures CORS (ports), defines relevant file paths." "Python module"
 
                 group "api/" {
                     routesPy = component "routes.py" "All FastAPI route definitions: GET /registry, GET /subjects, POST /timegraph." "Python module"
@@ -49,41 +49,41 @@ workspace "AsHDT" "Astronaut Health Data Tracker — longitudinal health monitor
                 }
 
                 group "core/state_store/" {
-                    databasePy      = component "database.py" "SQLite connection factory. Creates subjects, snapshots, and timegraph_reports tables with CREATE TABLE IF NOT EXISTS." "Python module"
-                    archiveReaderPy = component "archive_reader.py" "Reads index.json and data-point JSON files from the archive. Supports time-range queries." "Python module"
+                    databasePy      = component "database.py" "SQLite connection manager. Makes sure tables exist for metadata to be received and makes the connection to the database." "Python module"
+                    archiveReaderPy = component "archive_reader.py" "Reads index.json and datapoint JSON files from the archive, returns clean sorted lists ready for analysis." "Python module"
                 }
 
                 group "core/analysis/" {
-                    trajectoryPy = component "trajectory.py" "Pure computation module. Normalises raw values to health scores, fits a polynomial, computes analytic derivatives, assigns zones and trajectory states, estimates time-to-transition." "Python module"
+                    trajectoryPy = component "trajectory.py" "Pure computation module. Normalises raw data, fits a polynomial, computes derivatives, assigns zones and trajectory states, estimates time-to-transition." "Python module"
                 }
 
                 group "core/output/" {
-                    reportSerializerPy = component "report_serializer.py" "Serialises trajectory results to JSON files in the archive and inserts report metadata into SQLite." "Python module"
+                    reportSerializerPy = component "report_serializer.py" "Sends full JSON report results to the archive and inserts report metadata into the SQLite database." "Python module"
                 }
             }
 
-            db = container "SQLite Database" "Stores metadata for subjects, snapshots, and timegraph reports. Full JSON payloads live on the filesystem." "SQLite (data/asHDT.db)" {
+            db = container "SQLite Database" "Stores metadata for subjects, snapshots, and timegraph reports. Full JSON files live in the archive." "SQLite (data/asHDT.db)" {
                 tags "Database"
             }
 
-            archive = container "Archive" "Append-only JSON filesystem. Stores individual data-point files and generated report files. Never modified after creation." "Filesystem (data/archive/, data/reports/)" {
+            archive = container "Archive" "Append-only JSON filesystem. Stores individual datapoint files and generated report files. Never modified after creation." "Filesystem (data/archive/, data/reports/)" {
                 tags "Filesystem"
             }
 
-            moduleRegistry = container "Module Registry" "Single source of truth for all registered data-producing modules. Read once at backend startup." "JSON config (registry/module_registry.json)" {
+            moduleRegistry = container "Module Registry" "Single source of truth for all available data modules. Read once at backend startup." "JSON config (registry/module_registry.json)" {
                 tags "Config"
             }
         }
 
         # ── Relationships — container level ───────────────────────────────────
         healthOfficer -> frontend    "Uses dashboard via"                    "Browser / HTTP"
-        astronaut     -> dataModules "Performs tests measured by"
-        dataModules   -> archive     "Writes data-point files to"            "Filesystem I/O"
+        astronaut     -> dataModules "Performs tests measured by"            "Sensors / Data Input"
+        dataModules   -> archive     "Writes datapoint JSON files to"        "Write to disk"
 
         frontend  -> backend        "Calls REST API"                         "HTTP/JSON (port 8000)"
-        backend   -> db             "Reads and writes report metadata"       "sqlite3"
-        backend   -> archive        "Reads data-point files; writes reports" "Filesystem I/O"
-        backend   -> moduleRegistry "Reads module definitions at startup"    "File read"
+        backend   -> moduleRegistry "Reads list of possible data modules at startup"    "File read"       
+        backend   -> db             "Reads and writes report metadata"       "SQLite3"
+        backend   -> archive        "Reads datapoint files; writes reports"  "Write to disk"
 
         # ── Relationships — backend component level ───────────────────────────
         mainPy -> registryLoaderPy   "Calls load_registry() at startup"
@@ -95,12 +95,12 @@ workspace "AsHDT" "Astronaut Health Data Tracker — longitudinal health monitor
         routesPy -> reportSerializerPy "Calls save_timegraph_report()"
         routesPy -> databasePy         "Calls get_connection() for subject upsert"
 
-        reportSerializerPy -> databasePy "Inserts report metadata"
-        reportSerializerPy -> archive    "Writes report JSON file"
+        reportSerializerPy -> databasePy "Sends report metadata"
+        reportSerializerPy -> archive    "Saves report as JSON file"
 
-        archiveReaderPy  -> archive        "Reads index.json and data-point files"
+        archiveReaderPy  -> archive        "Reads index.json and datapoint files"
         registryLoaderPy -> moduleRegistry "Reads module_registry.json"
-        databasePy       -> db             "Creates tables; returns connections"
+        databasePy       -> db             "Creates tables; single connection to database"
 
         # ── Relationships — frontend component level ──────────────────────────
         appSvelte -> apiJs    "Calls getRegistry(), getSubjects() on mount"

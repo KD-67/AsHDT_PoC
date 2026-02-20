@@ -1,0 +1,846 @@
+{
+  "configuration" : { },
+  "description" : "Astronaut Health Data Tracker — longitudinal health monitoring and early risk detection platform.",
+  "documentation" : { },
+  "id" : 1,
+  "lastModifiedAgent" : "structurizr-ui",
+  "lastModifiedDate" : "2026-02-20T19:15:33Z",
+  "model" : {
+    "people" : [ {
+      "description" : "Primary user. Reviews trajectory analyses and monitors astronaut health status over time.",
+      "id" : "1",
+      "name" : "Mission Health Officer",
+      "properties" : {
+        "structurizr.dsl.identifier" : "healthOfficer"
+      },
+      "relationships" : [ {
+        "description" : "Uses dashboard via",
+        "destinationId" : "5",
+        "id" : "24",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "Browser / HTTP"
+      }, {
+        "description" : "Uses dashboard via",
+        "destinationId" : "4",
+        "id" : "25",
+        "linkedRelationshipId" : "24",
+        "sourceId" : "1",
+        "technology" : "Browser / HTTP"
+      } ],
+      "tags" : "Element,Person"
+    }, {
+      "description" : "Data subject. Performs stress tests and wears sensors that produce the health data.",
+      "id" : "2",
+      "name" : "Astronaut",
+      "properties" : {
+        "structurizr.dsl.identifier" : "astronaut"
+      },
+      "relationships" : [ {
+        "description" : "Performs tests measured by",
+        "destinationId" : "3",
+        "id" : "26",
+        "sourceId" : "2",
+        "tags" : "Relationship",
+        "technology" : "Sensors / Data Input"
+      } ],
+      "tags" : "Element,Person"
+    } ],
+    "softwareSystems" : [ {
+      "description" : "Wearable sensors, spaceflight analog study data, biochemical markers, and cognitive assessment tools. Each module writes JSON data-point files to the archive.",
+      "documentation" : { },
+      "id" : "3",
+      "name" : "Data Modules",
+      "properties" : {
+        "structurizr.dsl.identifier" : "dataModules"
+      },
+      "relationships" : [ {
+        "description" : "Writes datapoint JSON files to",
+        "destinationId" : "22",
+        "id" : "27",
+        "sourceId" : "3",
+        "tags" : "Relationship",
+        "technology" : "Write to disk"
+      }, {
+        "description" : "Writes datapoint JSON files to",
+        "destinationId" : "4",
+        "id" : "28",
+        "linkedRelationshipId" : "27",
+        "sourceId" : "3",
+        "technology" : "Write to disk"
+      } ],
+      "tags" : "Element,Software System,External"
+    }, {
+      "containers" : [ {
+        "components" : [ {
+          "description" : "Root layout component. Fetches registry and subject list on mount; no business logic.",
+          "documentation" : { },
+          "group" : "src/",
+          "id" : "6",
+          "name" : "App.svelte",
+          "properties" : {
+            "structurizr.dsl.identifier" : "appSvelte"
+          },
+          "relationships" : [ {
+            "description" : "Calls getRegistry(), getSubjects() on mount",
+            "destinationId" : "8",
+            "id" : "45",
+            "sourceId" : "6",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Writes registry, subjects stores",
+            "destinationId" : "9",
+            "id" : "46",
+            "sourceId" : "6",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Svelte component"
+        }, {
+          "description" : "Vite entry point. Mounts App into the DOM.",
+          "documentation" : { },
+          "group" : "src/",
+          "id" : "7",
+          "name" : "main.js",
+          "properties" : {
+            "structurizr.dsl.identifier" : "mainJs"
+          },
+          "tags" : "Element,Component",
+          "technology" : "JavaScript"
+        }, {
+          "description" : "All fetch calls to the backend API. Exports getRegistry(), getSubjects(), postTimegraph(). All error handling lives here.",
+          "documentation" : { },
+          "group" : "src/lib/",
+          "id" : "8",
+          "name" : "api.js",
+          "properties" : {
+            "structurizr.dsl.identifier" : "apiJs"
+          },
+          "relationships" : [ {
+            "description" : "HTTP fetch",
+            "destinationId" : "13",
+            "id" : "51",
+            "sourceId" : "8",
+            "tags" : "Relationship",
+            "technology" : "HTTP/JSON (port 8000)"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "JavaScript module"
+        }, {
+          "description" : "Svelte writable stores: registry, subjects, currentReport.",
+          "documentation" : { },
+          "group" : "src/lib/",
+          "id" : "9",
+          "name" : "stores.js",
+          "properties" : {
+            "structurizr.dsl.identifier" : "storesJs"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Svelte store"
+        }, {
+          "description" : "Collects analysis parameters (subject, module, marker, timeframe, zone boundaries, polynomial degree). Calls postTimegraph(); shows loading/error states.",
+          "documentation" : { },
+          "group" : "src/components/",
+          "id" : "10",
+          "name" : "TimeGraphForm.svelte",
+          "properties" : {
+            "structurizr.dsl.identifier" : "timeGraphForm"
+          },
+          "relationships" : [ {
+            "description" : "Calls postTimegraph()",
+            "destinationId" : "8",
+            "id" : "47",
+            "sourceId" : "10",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Writes currentReport store",
+            "destinationId" : "9",
+            "id" : "48",
+            "sourceId" : "10",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Svelte component"
+        }, {
+          "description" : "Plotly.js chart with zone bands, raw scatter markers sized by data_quality, fitted curve evaluated client-side from fit_metadata, and f' trace on secondary y-axis.",
+          "documentation" : { },
+          "group" : "src/components/",
+          "id" : "11",
+          "name" : "TrajectoryChart.svelte",
+          "properties" : {
+            "structurizr.dsl.identifier" : "trajectoryChart"
+          },
+          "relationships" : [ {
+            "description" : "Reads currentReport store",
+            "destinationId" : "9",
+            "id" : "49",
+            "sourceId" : "11",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Svelte component"
+        }, {
+          "description" : "Tabular view of trajectory output. Rows are color-coded by zone.",
+          "documentation" : { },
+          "group" : "src/components/",
+          "id" : "12",
+          "name" : "TrajectoryTable.svelte",
+          "properties" : {
+            "structurizr.dsl.identifier" : "trajectoryTable"
+          },
+          "relationships" : [ {
+            "description" : "Reads currentReport store",
+            "destinationId" : "9",
+            "id" : "50",
+            "sourceId" : "12",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Svelte component"
+        } ],
+        "description" : "Dashboard. Takes user requests for data analysis and presents requested trajectory charts and tables.",
+        "documentation" : { },
+        "id" : "5",
+        "name" : "Frontend",
+        "properties" : {
+          "structurizr.dsl.identifier" : "frontend"
+        },
+        "relationships" : [ {
+          "description" : "Calls REST API",
+          "destinationId" : "13",
+          "id" : "29",
+          "sourceId" : "5",
+          "tags" : "Relationship",
+          "technology" : "HTTP/JSON (port 8000)"
+        } ],
+        "tags" : "Element,Container,Browser",
+        "technology" : "Svelte 5 / Vite"
+      }, {
+        "components" : [ {
+          "description" : "FastAPI application entry point. Triggers startup tasks, configures CORS (ports), defines relevant file paths.",
+          "documentation" : { },
+          "id" : "14",
+          "name" : "main.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "mainPy"
+          },
+          "relationships" : [ {
+            "description" : "Calls load_registry() at startup",
+            "destinationId" : "16",
+            "id" : "33",
+            "sourceId" : "14",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Calls init_db() at startup",
+            "destinationId" : "17",
+            "id" : "34",
+            "sourceId" : "14",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Registers API router",
+            "destinationId" : "15",
+            "id" : "35",
+            "sourceId" : "14",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        }, {
+          "description" : "All FastAPI route definitions: GET /registry, GET /subjects, POST /timegraph.",
+          "documentation" : { },
+          "group" : "api/",
+          "id" : "15",
+          "name" : "routes.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "routesPy"
+          },
+          "relationships" : [ {
+            "description" : "Calls read_timeseries()",
+            "destinationId" : "18",
+            "id" : "36",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Calls compute_trajectory()",
+            "destinationId" : "19",
+            "id" : "37",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Calls save_timegraph_report()",
+            "destinationId" : "20",
+            "id" : "38",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Calls get_connection() for subject upsert",
+            "destinationId" : "17",
+            "id" : "39",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        }, {
+          "description" : "Loads and validates module_registry.json at startup.",
+          "documentation" : { },
+          "group" : "core/ingestion/",
+          "id" : "16",
+          "name" : "registry_loader.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "registryLoaderPy"
+          },
+          "relationships" : [ {
+            "description" : "Reads module_registry.json",
+            "destinationId" : "23",
+            "id" : "43",
+            "sourceId" : "16",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        }, {
+          "description" : "SQLite connection manager. Makes sure tables exist for metadata to be received and makes the connection to the database.",
+          "documentation" : { },
+          "group" : "core/state_store/",
+          "id" : "17",
+          "name" : "database.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "databasePy"
+          },
+          "relationships" : [ {
+            "description" : "Creates tables; single connection to database",
+            "destinationId" : "21",
+            "id" : "44",
+            "sourceId" : "17",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        }, {
+          "description" : "Reads index.json and datapoint JSON files from the archive, returns clean sorted lists ready for analysis.",
+          "documentation" : { },
+          "group" : "core/state_store/",
+          "id" : "18",
+          "name" : "archive_reader.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "archiveReaderPy"
+          },
+          "relationships" : [ {
+            "description" : "Reads index.json and datapoint files",
+            "destinationId" : "22",
+            "id" : "42",
+            "sourceId" : "18",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        }, {
+          "description" : "Pure computation module. Normalises raw data, fits a polynomial, computes derivatives, assigns zones and trajectory states, estimates time-to-transition.",
+          "documentation" : { },
+          "group" : "core/analysis/",
+          "id" : "19",
+          "name" : "trajectory.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "trajectoryPy"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        }, {
+          "description" : "Sends full JSON report results to the archive and inserts report metadata into the SQLite database.",
+          "documentation" : { },
+          "group" : "core/output/",
+          "id" : "20",
+          "name" : "report_serializer.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "reportSerializerPy"
+          },
+          "relationships" : [ {
+            "description" : "Sends report metadata",
+            "destinationId" : "17",
+            "id" : "40",
+            "sourceId" : "20",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Saves report as JSON file",
+            "destinationId" : "22",
+            "id" : "41",
+            "sourceId" : "20",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python module"
+        } ],
+        "description" : "REST API server. Orchestrates data retrieval, analysis, and long-term storage.",
+        "documentation" : { },
+        "id" : "13",
+        "name" : "Backend",
+        "properties" : {
+          "structurizr.dsl.identifier" : "backend"
+        },
+        "relationships" : [ {
+          "description" : "Reads list of possible data modules at startup",
+          "destinationId" : "23",
+          "id" : "30",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "File read"
+        }, {
+          "description" : "Reads and writes report metadata",
+          "destinationId" : "21",
+          "id" : "31",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "SQLite3"
+        }, {
+          "description" : "Reads datapoint files; writes reports",
+          "destinationId" : "22",
+          "id" : "32",
+          "sourceId" : "13",
+          "tags" : "Relationship",
+          "technology" : "Write to disk"
+        } ],
+        "tags" : "Element,Container,API",
+        "technology" : "Python / FastAPI / uvicorn (port 8000)"
+      }, {
+        "description" : "Stores metadata for subjects, snapshots, and timegraph reports. Full JSON files live in the archive.",
+        "documentation" : { },
+        "id" : "21",
+        "name" : "SQLite Database",
+        "properties" : {
+          "structurizr.dsl.identifier" : "db"
+        },
+        "tags" : "Element,Container,Database",
+        "technology" : "SQLite (data/asHDT.db)"
+      }, {
+        "description" : "Append-only JSON filesystem. Stores individual datapoint files and generated report files. Never modified after creation.",
+        "documentation" : { },
+        "id" : "22",
+        "name" : "Archive",
+        "properties" : {
+          "structurizr.dsl.identifier" : "archive"
+        },
+        "tags" : "Element,Container,Filesystem",
+        "technology" : "Filesystem (data/archive/, data/reports/)"
+      }, {
+        "description" : "Single source of truth for all available data modules. Read once at backend startup.",
+        "documentation" : { },
+        "id" : "23",
+        "name" : "Module Registry",
+        "properties" : {
+          "structurizr.dsl.identifier" : "moduleRegistry"
+        },
+        "tags" : "Element,Container,Config",
+        "technology" : "JSON config (registry/module_registry.json)"
+      } ],
+      "description" : "Maintains a persistent, continuously updated health state for each subject. Computes trajectory analyses of individual biomarkers over time using a three-derivative framework.",
+      "documentation" : { },
+      "id" : "4",
+      "name" : "AsHDT",
+      "properties" : {
+        "structurizr.dsl.identifier" : "asHDT"
+      },
+      "tags" : "Element,Software System"
+    } ]
+  },
+  "name" : "AsHDT",
+  "properties" : {
+    "structurizr.inspection.info" : "0",
+    "structurizr.inspection.ignore" : "0",
+    "structurizr.inspection.error" : "23",
+    "structurizr.inspection.warning" : "0"
+  },
+  "views" : {
+    "componentViews" : [ {
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "containerId" : "13",
+      "description" : "C4 Level 3 — Python modules in the FastAPI backend, grouped by package directory.",
+      "dimensions" : {
+        "height" : 3239,
+        "width" : 3276
+      },
+      "elements" : [ {
+        "id" : "14",
+        "x" : 684,
+        "y" : 182
+      }, {
+        "id" : "15",
+        "x" : 684,
+        "y" : 782
+      }, {
+        "id" : "16",
+        "x" : 1709,
+        "y" : 782
+      }, {
+        "id" : "17",
+        "x" : 259,
+        "y" : 1982
+      }, {
+        "id" : "18",
+        "x" : 1009,
+        "y" : 1982
+      }, {
+        "id" : "19",
+        "x" : 1080,
+        "y" : 1382
+      }, {
+        "id" : "20",
+        "x" : 1842,
+        "y" : 1382
+      }, {
+        "id" : "21",
+        "x" : 259,
+        "y" : 2582
+      }, {
+        "id" : "22",
+        "x" : 1272,
+        "y" : 2582
+      }, {
+        "id" : "23",
+        "x" : 2605,
+        "y" : 1382
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "BackendComponents",
+      "name" : "Component View: AsHDT - Backend",
+      "order" : 3,
+      "relationships" : [ {
+        "id" : "33"
+      }, {
+        "id" : "34",
+        "vertices" : [ {
+          "x" : 505,
+          "y" : 678
+        } ]
+      }, {
+        "id" : "35"
+      }, {
+        "id" : "36",
+        "vertices" : [ {
+          "x" : 901,
+          "y" : 1278
+        }, {
+          "x" : 901,
+          "y" : 1786
+        } ]
+      }, {
+        "id" : "37"
+      }, {
+        "id" : "38",
+        "vertices" : [ {
+          "x" : 1709,
+          "y" : 1278
+        } ]
+      }, {
+        "id" : "39"
+      }, {
+        "id" : "40",
+        "vertices" : [ {
+          "x" : 1709,
+          "y" : 1786
+        }, {
+          "x" : 859,
+          "y" : 1878
+        } ]
+      }, {
+        "id" : "41",
+        "vertices" : [ {
+          "x" : 1638,
+          "y" : 2490
+        } ]
+      }, {
+        "id" : "42"
+      }, {
+        "id" : "43",
+        "vertices" : [ {
+          "x" : 2472,
+          "y" : 1278
+        } ]
+      }, {
+        "id" : "44"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "containerId" : "5",
+      "description" : "C4 Level 3 — Svelte components and JavaScript modules in the frontend SPA.",
+      "elements" : [ {
+        "id" : "6",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "7",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "8",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "9",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "10",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "11",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "12",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "13",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "FrontendComponents",
+      "name" : "Component View: AsHDT - Frontend",
+      "order" : 4,
+      "relationships" : [ {
+        "id" : "45"
+      }, {
+        "id" : "46"
+      }, {
+        "id" : "47"
+      }, {
+        "id" : "48"
+      }, {
+        "id" : "49"
+      }, {
+        "id" : "50"
+      }, {
+        "id" : "51"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "containerId" : "13",
+      "description" : "C4 Level 4 — Python module layout for the FastAPI backend, grouped by package directory.",
+      "elements" : [ {
+        "id" : "14",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "15",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "16",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "17",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "18",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "19",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "20",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "BackendFilesystem",
+      "name" : "Component View: AsHDT - Backend",
+      "order" : 5,
+      "relationships" : [ {
+        "id" : "33"
+      }, {
+        "id" : "34"
+      }, {
+        "id" : "35"
+      }, {
+        "id" : "36"
+      }, {
+        "id" : "37"
+      }, {
+        "id" : "38"
+      }, {
+        "id" : "39"
+      }, {
+        "id" : "40"
+      } ]
+    } ],
+    "configuration" : {
+      "branding" : { },
+      "lastSavedView" : "BackendComponents",
+      "metadataSymbols" : "SquareBrackets",
+      "styles" : {
+        "elements" : [ {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "API"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "shape" : "WebBrowser",
+          "tag" : "Browser"
+        }, {
+          "background" : "#85bbf0",
+          "color" : "#000000",
+          "tag" : "Component"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "shape" : "Ellipse",
+          "tag" : "Config"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "tag" : "Container"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "shape" : "Cylinder",
+          "tag" : "Database"
+        }, {
+          "background" : "#999999",
+          "color" : "#ffffff",
+          "tag" : "External"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "shape" : "Folder",
+          "tag" : "Filesystem"
+        }, {
+          "background" : "#08427b",
+          "color" : "#ffffff",
+          "shape" : "Person",
+          "tag" : "Person"
+        }, {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "Software System"
+        } ]
+      },
+      "terminology" : { }
+    },
+    "containerViews" : [ {
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "description" : "C4 Level 2 — containers inside AsHDT and their relationships.",
+      "elements" : [ {
+        "id" : "1",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "3",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "5",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "13",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "21",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "22",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "23",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalSoftwareSystemBoundariesVisible" : false,
+      "key" : "Containers",
+      "name" : "Container View: AsHDT",
+      "order" : 2,
+      "relationships" : [ {
+        "id" : "24"
+      }, {
+        "id" : "27"
+      }, {
+        "id" : "29"
+      }, {
+        "id" : "30"
+      }, {
+        "id" : "31"
+      }, {
+        "id" : "32"
+      } ],
+      "softwareSystemId" : "4"
+    } ],
+    "systemContextViews" : [ {
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "description" : "C4 Level 1 — system context showing AsHDT and its actors.",
+      "elements" : [ {
+        "id" : "1",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "3",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "4",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "enterpriseBoundaryVisible" : true,
+      "key" : "SystemContext",
+      "name" : "System Context View: AsHDT",
+      "order" : 1,
+      "relationships" : [ {
+        "id" : "25"
+      }, {
+        "id" : "28"
+      } ],
+      "softwareSystemId" : "4"
+    } ]
+  }
+}

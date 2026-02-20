@@ -1,47 +1,35 @@
 <script>
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import { onMount } from 'svelte'
+  import { registry, subjects, currentReport } from './lib/stores.js'
+  import { getRegistry, getSubjects } from './lib/api.js'
+  import TimeGraphForm from './components/TimeGraphForm.svelte'
+  import TrajectoryChart from './components/TrajectoryChart.svelte'
+  import TrajectoryTable from './components/TrajectoryTable.svelte'
+
+  onMount(async () => {
+    const [reg, subs] = await Promise.all([getRegistry(), getSubjects()])
+    registry.set(reg)
+    subjects.set(subs)
+  })
 </script>
 
 <main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+  <h1>AsHDT</h1>
+  <TimeGraphForm />
+  {#if $currentReport}
+    <TrajectoryChart />
+    <TrajectoryTable />
+  {/if}
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    font-family: sans-serif;
   }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
+  h1 {
+    margin-bottom: 1.5rem;
   }
 </style>

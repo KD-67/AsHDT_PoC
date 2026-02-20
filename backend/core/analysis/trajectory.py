@@ -140,6 +140,7 @@ def compute_trajectory(
             "timestamp":                dp["timestamp"],
             "x_hours":                  round(x, 6),
             "raw_value":                dp["value"],
+            "data_quality":             dp.get("data_quality", "good"),
             "health_score":             round(health_score, 6),
             "fitted_value":             round(fitted_value, 6),
             "zone":                     zone,

@@ -3,7 +3,7 @@
   "module_id": "vtf_stress_test",
   "marker_id": "vo2max",
   "subject_id": "dummySubject_001",
-  "timestamp": "2026-02-09T08-00-00Z",
+  "timestamp": "2026-02-09T08:00:00Z",
   "value": 46.1,
   "unit": "ml/kg/min",
   "data_quality": "good"

@@ -66,7 +66,7 @@ def init_db(db_path: str) -> None:
                 polynomial_degree        INTEGER NOT NULL,
                 healthy_min              REAL NOT NULL,
                 healthy_max              REAL NOT NULL,
-                vulnerability_margin_pct REAL NOT NULL
+                vulnerability_margin      REAL NOT NULL
             )
         """)
 

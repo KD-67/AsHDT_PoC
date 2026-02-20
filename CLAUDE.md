@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 AsHDT is a modular platform for longitudinal health monitoring and early risk detection for astronauts. It maintains a persistent, continuously updated health state for each subject by integrating data from multiple independent data-producing modules (wearables, stress tests, lab results, cognitive assessments, etc.).
 
 The system's primary analytical output is a **trajectory analysis** of individual biomarkers over time, based on a three-derivative framework:
-- f(x) — current value relative to personalized zone boundaries (Non-pathology / Vulnerability / Pathology)
+- f(x) — normalized health score h(raw) classified into a zone (Non-pathology / Vulnerability / Pathology)
 - f'(x) — direction of change (Improving / Stable / Worsening)
 - f''(x) — rate of change (Accelerating / Steady / Decelerating)
 
@@ -110,12 +110,14 @@ Module output → Ingestion → State Store → Analysis → Output
 - The archive is append-only. `index.json` is the only file that gets updated (new entries appended).
 
 ### Trajectory computation
-- Fits a **single polynomial** (`numpy.polyfit`) to the time-series. Does NOT use numerical differentiation.
+- Raw values are first normalized to a scalar **health score** `h` via a u-shaped transform: `h = 1 - |raw - mid| / half_range`. Higher h is always healthier; h < 0 means outside the healthy range.
+- The polynomial is fitted to **h values**, not raw values. All derivatives operate in h-space.
+- Fits a **single polynomial** (`numpy.polyfit`) to the h time-series. Does NOT use numerical differentiation.
 - Derivatives computed analytically from polynomial coefficients via `numpy.polyder`.
 - Time expressed as **hours elapsed since the earliest timestamp** for numerical stability.
-- Zone assignment uses **raw measured values**, not fitted values.
-- Time-to-transition uses `numpy.roots` on (polynomial − boundary_value), filtering for real positive roots beyond the current x.
-- Derivative zero threshold: ±0.001 per hour.
+- Zone assignment uses `h(raw)` of the **raw measured value** (not the fitted polynomial value).
+- Time-to-transition uses `numpy.roots` on (polynomial − boundary_value) for three h-space thresholds: `+vulnerability_margin`, `0`, and `-vulnerability_margin`.
+- Derivative zero threshold: ±0.001 h-units/hour.
 
 ### Frontend API calls
 - **All** fetch calls must go through `frontend/src/lib/api.js`. No fetch calls elsewhere.
@@ -161,7 +163,7 @@ Module output → Ingestion → State Store → Analysis → Output
   "module_id": "vtf_stress_test",
   "marker_id": "vo2max",
   "timeframe": { "from": "2026-01-01T00:00:00Z", "to": "2026-03-31T00:00:00Z" },
-  "zone_boundaries": { "healthy_min": 45.0, "healthy_max": 60.0, "vulnerability_margin_pct": 10.0 },
+  "zone_boundaries": { "healthy_min": 45.0, "healthy_max": 60.0, "vulnerability_margin": 0.1 },
   "fitting": { "polynomial_degree": 2 }
 }
 ```
@@ -172,14 +174,17 @@ Module output → Ingestion → State Store → Analysis → Output
   "timestamp": "2026-01-05T08:00:00Z",
   "x_hours": 0.0,
   "raw_value": 55.1,
-  "fitted_value": 54.8,
+  "health_score": 0.653,
+  "fitted_value": 0.648,
   "zone": "non_pathology",
-  "f_prime": -0.18,
-  "f_double_prime": 0.002,
-  "trajectory_state": 9,
-  "time_to_transition_hours": 312.5
+  "f_prime": -0.00041,
+  "f_double_prime": 0.0,
+  "trajectory_state": 8,
+  "time_to_transition_hours": 1592.0
 }
 ```
+- `health_score`: `h(raw_value)` — normalized scalar; 1.0 = optimal, 0.0 = at healthy edge, negative = outside healthy range
+- `fitted_value`: polynomial evaluated at `x_hours`, in **h-units** (not raw measurement units)
 - `zone`: `"non_pathology"` | `"vulnerability"` | `"pathology"`
 - `trajectory_state`: integer 1–27
 - `time_to_transition_hours`: may be `null`
@@ -188,19 +193,30 @@ Module output → Ingestion → State Store → Analysis → Output
 
 ## Zone Boundary Logic
 
-```
-range = healthy_max - healthy_min
-margin = range * vulnerability_margin_pct / 100
+Raw values are first normalized to a health score `h` via a u-shaped transform:
 
-vulnerability_lower = healthy_min + margin
-vulnerability_upper = healthy_max - margin
-
-raw_value < healthy_min                                      → pathology
-healthy_min <= raw_value < vulnerability_lower               → vulnerability
-vulnerability_lower <= raw_value <= vulnerability_upper      → non_pathology
-vulnerability_upper < raw_value <= healthy_max               → vulnerability
-raw_value > healthy_max                                      → pathology
 ```
+mid        = (healthy_min + healthy_max) / 2
+half_range = (healthy_max - healthy_min) / 2
+h(raw)     = 1 - |raw - mid| / half_range
+```
+
+| raw value                    | h(raw) |
+|------------------------------|--------|
+| mid                          |  1.0   |
+| healthy_min or healthy_max   |  0.0   |
+| outside by one half_range    | -1.0   |
+
+Zone assignment is then purely based on `h` and a normalized `vulnerability_margin`:
+
+```
+h >  vulnerability_margin   →  non_pathology
+|h| ≤ vulnerability_margin  →  vulnerability
+h < -vulnerability_margin   →  pathology
+```
+
+`vulnerability_margin` is a normalized h-space float (e.g. `0.1` means the band
+±0.1 around `h = 0` is the vulnerability zone).
 
 ---
 
@@ -234,7 +250,7 @@ CREATE TABLE IF NOT EXISTS timegraph_reports (
     polynomial_degree INTEGER NOT NULL,
     healthy_min REAL NOT NULL,
     healthy_max REAL NOT NULL,
-    vulnerability_margin_pct REAL NOT NULL
+    vulnerability_margin REAL NOT NULL
 );
 ```
 

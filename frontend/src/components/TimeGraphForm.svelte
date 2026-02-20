@@ -182,7 +182,7 @@
   }
   button {
     padding: 0.5rem 1.2rem;
-    background: #3b82f6;
+    background: #4c2bc4;
     color: white;
     border: none;
     border-radius: 4px;

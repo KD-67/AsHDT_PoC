@@ -1,0 +1,197 @@
+{
+  "report_id": "6498aec2-6322-4b31-9571-d832d4050454",
+  "subject_id": "subject_001",
+  "module_id": "vtf_stress_test",
+  "marker_id": "vo2max",
+  "requested_at": "2026-02-20T16:38:52.756379Z",
+  "timeframe": {
+    "from": "2026-01-01T16:38:00.000Z",
+    "to": "2026-03-31T15:38:00.000Z"
+  },
+  "zone_boundaries": {
+    "healthy_min": 2.0,
+    "healthy_max": 20.0,
+    "vulnerability_margin": 0.1
+  },
+  "fitting": {
+    "polynomial_degree": 2
+  },
+  "result": {
+    "data_points": [
+      {
+        "timestamp": "2026-01-05T08:00:00Z",
+        "x_hours": 0.0,
+        "raw_value": 55.1,
+        "data_quality": "good",
+        "health_score": -3.9,
+        "fitted_value": -4.097314,
+        "zone": "pathology",
+        "f_prime": 0.002358,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 20,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-01-12T08:00:00Z",
+        "x_hours": 168.0,
+        "raw_value": 53.8,
+        "data_quality": "good",
+        "health_score": -3.755556,
+        "fitted_value": -3.727994,
+        "zone": "pathology",
+        "f_prime": 0.002039,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 20,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-01-19T08:00:00Z",
+        "x_hours": 336.0,
+        "raw_value": 52.1,
+        "data_quality": "good",
+        "health_score": -3.566667,
+        "fitted_value": -3.412243,
+        "zone": "pathology",
+        "f_prime": 0.00172,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 20,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-01-26T08:00:00Z",
+        "x_hours": 504.0,
+        "raw_value": 49.0,
+        "data_quality": "good",
+        "health_score": -3.222222,
+        "fitted_value": -3.150061,
+        "zone": "pathology",
+        "f_prime": 0.001401,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 20,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-02-02T08:00:00Z",
+        "x_hours": 672.0,
+        "raw_value": 47.2,
+        "data_quality": "good",
+        "health_score": -3.022222,
+        "fitted_value": -2.941447,
+        "zone": "pathology",
+        "f_prime": 0.001082,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 20,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-02-09T08:00:00Z",
+        "x_hours": 840.0,
+        "raw_value": 46.1,
+        "data_quality": "good",
+        "health_score": -2.9,
+        "fitted_value": -2.786402,
+        "zone": "pathology",
+        "f_prime": 0.000763,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 23,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-02-16T08:00:00Z",
+        "x_hours": 1008.0,
+        "raw_value": 44.3,
+        "data_quality": "degraded",
+        "health_score": -2.7,
+        "fitted_value": -2.684926,
+        "zone": "pathology",
+        "f_prime": 0.000445,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 23,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-02-23T08:00:00Z",
+        "x_hours": 1176.0,
+        "raw_value": 42.8,
+        "data_quality": "degraded",
+        "health_score": -2.533333,
+        "fitted_value": -2.637019,
+        "zone": "pathology",
+        "f_prime": 0.000126,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 23,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-03-02T08:00:00Z",
+        "x_hours": 1344.0,
+        "raw_value": 41.5,
+        "data_quality": "bad",
+        "health_score": -2.388889,
+        "fitted_value": -2.64268,
+        "zone": "pathology",
+        "f_prime": -0.000193,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 23,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-03-09T08:00:00Z",
+        "x_hours": 1512.0,
+        "raw_value": 43.1,
+        "data_quality": "good",
+        "health_score": -2.566667,
+        "fitted_value": -2.701909,
+        "zone": "pathology",
+        "f_prime": -0.000512,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 23,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-03-16T08:00:00Z",
+        "x_hours": 1680.0,
+        "raw_value": 45.8,
+        "data_quality": "good",
+        "health_score": -2.866667,
+        "fitted_value": -2.814708,
+        "zone": "pathology",
+        "f_prime": -0.000831,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 23,
+        "time_to_transition_hours": null
+      },
+      {
+        "timestamp": "2026-03-23T08:00:00Z",
+        "x_hours": 1848.0,
+        "raw_value": 48.4,
+        "data_quality": "good",
+        "health_score": -3.155556,
+        "fitted_value": -2.981074,
+        "zone": "pathology",
+        "f_prime": -0.00115,
+        "f_double_prime": -2e-06,
+        "trajectory_state": 26,
+        "time_to_transition_hours": null
+      }
+    ],
+    "fit_metadata": {
+      "coefficients": [
+        -9.489911700796049e-07,
+        0.0023577612863327165,
+        -4.0973137973138
+      ],
+      "t0_iso": "2026-01-05T08:00:00Z",
+      "polynomial_degree": 2,
+      "normalization": {
+        "healthy_min": 2.0,
+        "healthy_max": 20.0,
+        "mid": 11.0,
+        "half_range": 9.0
+      },
+      "zone_boundaries": {
+        "vulnerability_margin": 0.1
+      }
+    }
+  }
+}
